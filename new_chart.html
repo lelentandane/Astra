@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}New chart | Astra{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <h1>New chart</h1>
+</section>
+
+{% if errors %}
+  <div class="alert" role="alert">
+    <p><strong>Fix these before saving:</strong></p>
+    <ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul>
+  </div>
+{% endif %}
+
+<form class="chart-form" method="post" novalidate>
+  <fieldset>
+    <legend>About this chart</legend>
+    <div class="field">
+      <label for="name">Chart name</label>
+      <input id="name" name="name" type="text" maxlength="80" required value="{{ form.get('name', '') }}" placeholder="For example: My natal chart">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="birth_date">Birth date <span class="optional">optional</span></label>
+        <input id="birth_date" name="birth_date" type="date" value="{{ form.get('birth_date', '') }}">
+      </div>
+      <div class="field">
+        <label for="birth_time">Birth time <span class="optional">optional</span></label>
+        <input id="birth_time" name="birth_time" type="time" value="{{ form.get('birth_time', '') }}">
+      </div>
+      <div class="field">
+        <label for="birth_place">Birth place <span class="optional">optional</span></label>
+        <input id="birth_place" name="birth_place" type="text" maxlength="120" value="{{ form.get('birth_place', '') }}">
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Placements</legend>
+    <p class="hint">Copy these from a chart you already have. Sun, Moon and Ascendant are required. Leave a planet blank to skip it. Houses are worked out for you using whole-sign houses.</p>
+
+    <div class="placement-grid">
+      <div class="placement-head" aria-hidden="true">
+        <span>Body</span><span>Sign</span><span>Degree</span><span>Minute</span><span>Retrograde</span>
+      </div>
+
+      {% for body in bodies %}
+        <div class="placement-row">
+          <div class="placement-body">
+            <span class="sym" aria-hidden="true">{{ body.glyph }}</span>
+            <span>{{ body.name }}{% if body.required %} <span class="optional">required</span>{% endif %}</span>
+          </div>
+          <select name="sign_{{ body.name }}" aria-label="{{ body.name }} sign">
+            <option value="">Sign</option>
+            {% for sign in signs %}
+              <option value="{{ sign.name }}" {% if form.get('sign_' ~ body.name) == sign.name %}selected{% endif %}>{{ sign.name }}</option>
+            {% endfor %}
+          </select>
+          <input name="deg_{{ body.name }}" type="number" min="0" max="29" inputmode="numeric" placeholder="0 to 29" aria-label="{{ body.name }} degree" value="{{ form.get('deg_' ~ body.name, '') }}">
+          <input name="min_{{ body.name }}" type="number" min="0" max="59" inputmode="numeric" placeholder="0 to 59" aria-label="{{ body.name }} minute" value="{{ form.get('min_' ~ body.name, '') }}">
+          {% if body.can_retrograde %}
+            <label class="check">
+              <input type="checkbox" name="rx_{{ body.name }}" {% if form.get('rx_' ~ body.name) %}checked{% endif %}>
+              <span>Retrograde</span>
+            </label>
+          {% else %}
+            <span class="check-empty" aria-hidden="true"></span>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </fieldset>
+
+  <div class="actions">
+    <button class="button" type="submit">Save chart</button>
+    <a class="button button-quiet" href="{{ url_for('main.index') }}">Cancel</a>
+  </div>
+</form>
+{% endblock %}

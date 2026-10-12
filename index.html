@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Your charts | Astra{% endblock %}
+
+{% block content %}
+{% if summaries %}
+  <section class="page-head">
+    <h1>Your charts</h1>
+    <a class="button" href="{{ url_for('main.new_chart') }}">New chart</a>
+  </section>
+
+  <ul class="chart-list">
+    {% for item in summaries %}
+      <li>
+        <a class="chart-row" href="{{ url_for('main.view_chart', chart_id=item.chart.id) }}">
+          <span class="chart-row-name">{{ item.chart.name }}</span>
+          <span class="chart-row-signs">
+            {% if item.signs.get('Sun') %}<span><span class="sym" aria-hidden="true">&#9737;&#xFE0E;</span> Sun in {{ item.signs['Sun'] }}</span>{% endif %}
+            {% if item.signs.get('Moon') %}<span><span class="sym" aria-hidden="true">&#9789;&#xFE0E;</span> Moon in {{ item.signs['Moon'] }}</span>{% endif %}
+            {% if item.signs.get('Ascendant') %}<span><span class="sym" aria-hidden="true">AC</span> {{ item.signs['Ascendant'] }} rising</span>{% endif %}
+          </span>
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
+
+  {% if not has_sample %}
+    <form class="sample-offer" method="post" action="{{ url_for('main.load_sample') }}">
+      <p>Want to explore first? Load a fictional chart.</p>
+      <button class="button button-quiet" type="submit">Load sample chart</button>
+    </form>
+  {% endif %}
+{% else %}
+  <section class="welcome">
+    <div class="welcome-copy">
+      <h1>Read your chart like a map you can click.</h1>
+      <p>Enter the placements from your birth chart and Astra draws the wheel, works out your houses, and lets you explore each planet, sign and house.</p>
+      <div class="actions">
+        <a class="button" href="{{ url_for('main.new_chart') }}">Create your chart</a>
+        <form method="post" action="{{ url_for('main.load_sample') }}">
+          <button class="button button-quiet" type="submit">Explore a sample chart</button>
+        </form>
+      </div>
+    </div>
+    <div class="welcome-wheel" id="demo-wheel" role="img" aria-label="Example birth chart wheel"></div>
+  </section>
+  <script id="demo-data" type="application/json">{{ demo|tojson }}</script>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if not summaries %}
+  <script src="{{ url_for('static', filename='js/wheel.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/demo.js') }}"></script>
+{% endif %}
+{% endblock %}

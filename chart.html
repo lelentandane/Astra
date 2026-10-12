@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ chart.name }} | Astra{% endblock %}
+
+{% block content %}
+<section class="chart-layout">
+  <div class="chart-wheel">
+    <div id="wheel" role="img" aria-label="Wheel for {{ chart.name }}. Placements are listed in the table."></div>
+  </div>
+
+  <div class="chart-details">
+    <h1>{{ chart.name }}</h1>
+    {% if chart.birth_date or chart.birth_time or chart.birth_place %}
+      <p class="birth-line">
+        {{ [chart.birth_date, chart.birth_time, chart.birth_place] | select | join(', ') }}
+      </p>
+    {% endif %}
+
+    <table class="placements">
+      <caption class="visually-hidden">Placements for {{ chart.name }}</caption>
+      <thead>
+        <tr><th scope="col">Body</th><th scope="col">Sign</th><th scope="col">Position</th><th scope="col">House</th></tr>
+      </thead>
+      <tbody>
+        {% for p in wheel.placements %}
+          <tr data-row="{{ p.body }}">
+            <th scope="row">
+              <span class="sym" aria-hidden="true">{{ p.glyph }}</span>
+              {{ p.body }}{% if p.retrograde %} <abbr title="Retrograde" class="rx">&#8478;</abbr>{% endif %}
+            </th>
+            <td><span class="sym" aria-hidden="true">{{ p.signGlyph }}</span> {{ p.sign }}</td>
+            <td class="num">{{ p.position }}</td>
+            <td>{{ p.house | ordinal }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="actions">
+      <a class="button button-quiet" href="{{ url_for('main.index') }}">Back to charts</a>
+      <form method="post" action="{{ url_for('main.delete_chart', chart_id=chart.id) }}" onsubmit="return confirm('Delete this chart? This cannot be undone.');">
+        <button class="button button-danger" type="submit">Delete chart</button>
+      </form>
+    </div>
+  </div>
+</section>
+<script id="chart-data" type="application/json">{{ wheel|tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/wheel.js') }}"></script>
+<script src="{{ url_for('static', filename='js/chart.js') }}"></script>
+{% endblock %}

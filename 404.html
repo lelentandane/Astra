@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Not found | Astra{% endblock %}
+{% block content %}
+<section class="page-head">
+  <h1>That page does not exist</h1>
+</section>
+<p>The chart may have been deleted, or the link may be mistyped.</p>
+<div class="actions"><a class="button" href="{{ url_for('main.index') }}">Back to your charts</a></div>
+{% endblock %}
