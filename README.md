@@ -1,12 +1,10 @@
 # Astra
 
-![Tests](https://github.com/lelentandane/astra/actions/workflows/tests.yml/badge.svg)
-
 Astra is a local web app for exploring astrology birth charts. Enter the placements from a chart you already have and Astra draws an interactive wheel, works out the houses and aspects, builds a written reading for every placement, and lets you keep a journal of observations attached to specific planets.
 
 Everything runs on your own computer with Flask and SQLite. There are no accounts, no external services and no API keys.
 
-![Chart wheel with a reading open](docs/screenshots/reading.png)
+![Chart wheel with a reading open](reading.png)
 
 ## Features
 
@@ -30,9 +28,15 @@ Everything runs on your own computer with Flask and SQLite. There are no account
 - 50+ automated tests for the astrology maths, the interpretation engine, the journal and every route, run on each push by GitHub Actions.
 - Keyboard accessible (tabs, wheel, table), responsive down to phone width, respects reduced-motion settings, and fonts are bundled so it works offline.
 
-| Aspects | Journal |
-|---|---|
-| ![Aspects tab](docs/screenshots/aspects.png) | ![Journal](docs/screenshots/journal.png) |
+| 
+
+![Aspects tab](aspects.png)
+
+ | 
+
+![Journal](journal.png)
+
+ |
 
 ## Run it
 
