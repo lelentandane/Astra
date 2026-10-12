@@ -78,3 +78,54 @@ def test_birth_details_validation():
     details, errors = astro.parse_birth_details({"birth_date": "1999-08-14", "birth_time": "06:45"})
     assert errors == []
     assert details["birth_place"] is None
+
+
+# ---------------------------------------------------------------- aspects
+
+def test_angular_distance_takes_the_short_way_round():
+    assert astro.angular_distance(10, 350) == 20
+    assert astro.angular_distance(0, 180) == 180
+    assert astro.angular_distance(90, 90) == 0
+
+
+def test_find_aspects_detects_each_aspect_type():
+    points = [("Sun", 0), ("Mercury", 3), ("Venus", 60), ("Mars", 92), ("Jupiter", 120), ("Saturn", 180)]
+    found = {(a["a"], a["b"]): a["type"] for a in astro.find_aspects(points)}
+    assert found[("Sun", "Mercury")] == "Conjunction"
+    assert found[("Sun", "Venus")] == "Sextile"
+    assert found[("Sun", "Mars")] == "Square"
+    assert found[("Sun", "Jupiter")] == "Trine"
+    assert found[("Sun", "Saturn")] == "Opposition"
+
+
+def test_aspects_outside_orb_are_ignored():
+    assert astro.find_aspects([("Sun", 0), ("Moon", 100)]) == []  # 10 degrees from a square, orb is 6
+    assert astro.find_aspects([("Sun", 0), ("Moon", 66)]) == []  # 6 degrees from a sextile, orb is 4
+
+
+def test_points_use_a_tighter_orb():
+    # 5 degrees off a trine is fine between planets but too wide for the North Node.
+    assert len(astro.find_aspects([("Sun", 0), ("Moon", 125)])) == 1
+    assert astro.find_aspects([("Sun", 0), ("North Node", 125)]) == []
+
+
+def test_aspects_are_sorted_by_tightest_orb():
+    found = astro.find_aspects([("Sun", 0), ("Moon", 5), ("Mars", 1)])
+    orbs = [a["orb"] for a in found]
+    assert orbs == sorted(orbs)
+
+
+def test_orb_text_is_in_degrees_and_minutes():
+    assert astro.format_orb(1.5) == "1\u00b030\u2032"
+    assert astro.format_orb(0.3667) == "0\u00b022\u2032"
+
+
+def test_wheel_data_includes_aspects_for_the_sample_chart():
+    wheel = astro.wheel_data(astro.SAMPLE_PLACEMENTS)
+    pairs = {(a["a"], a["b"]): a["type"] for a in wheel["aspects"]}
+    assert pairs[("Moon", "Mercury")] == "Opposition"
+
+
+@pytest.mark.parametrize("number, expected", [(1, "1st"), (2, "2nd"), (3, "3rd"), (4, "4th"), (11, "11th"), (12, "12th"), (21, "21st")])
+def test_ordinal(number, expected):
+    assert astro.ordinal(number) == expected

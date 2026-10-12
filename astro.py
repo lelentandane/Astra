@@ -77,6 +77,69 @@ def format_position(degree, minute):
     return f"{degree}\u00b0{minute:02d}\u2032"
 
 
+ASPECTS = [
+    {"name": "Conjunction", "angle": 0, "orb": 8, "nature": "neutral"},
+    {"name": "Sextile", "angle": 60, "orb": 4, "nature": "harmonious"},
+    {"name": "Square", "angle": 90, "orb": 6, "nature": "challenging"},
+    {"name": "Trine", "angle": 120, "orb": 6, "nature": "harmonious"},
+    {"name": "Opposition", "angle": 180, "orb": 8, "nature": "challenging"},
+]
+
+# Points that are not planets use a tighter orb so they do not flood the chart.
+POINTS = {"Ascendant", "North Node"}
+POINT_ORB_LIMIT = 3
+
+
+def ordinal(n):
+    """1 -> 1st, 2 -> 2nd, 11 -> 11th."""
+    if 10 <= n % 100 <= 20:
+        suffix = "th"
+    else:
+        suffix = {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+    return f"{n}{suffix}"
+
+
+def angular_distance(first, second):
+    """Shortest distance between two longitudes, 0 to 180 degrees."""
+    distance = abs(first - second) % 360
+    return 360 - distance if distance > 180 else distance
+
+
+def format_orb(orb):
+    total_minutes = round(orb * 60)
+    degrees, minutes = divmod(total_minutes, 60)
+    return format_position(degrees, minutes)
+
+
+def find_aspects(points):
+    """Find aspects between bodies.
+
+    points: list of (body_name, longitude) in display order.
+    Returns a list sorted by tightest orb first.
+    """
+    found = []
+    for i, (name_a, lon_a) in enumerate(points):
+        for name_b, lon_b in points[i + 1:]:
+            distance = angular_distance(lon_a, lon_b)
+            uses_point = name_a in POINTS or name_b in POINTS
+            for aspect in ASPECTS:
+                allowed = min(aspect["orb"], POINT_ORB_LIMIT) if uses_point else aspect["orb"]
+                orb = abs(distance - aspect["angle"])
+                if orb <= allowed:
+                    found.append(
+                        {
+                            "a": name_a,
+                            "b": name_b,
+                            "type": aspect["name"],
+                            "nature": aspect["nature"],
+                            "orb": round(orb, 3),
+                            "orbText": format_orb(orb),
+                        }
+                    )
+                    break
+    return sorted(found, key=lambda item: item["orb"])
+
+
 def wheel_data(placements):
     """Turn stored placements into the structure used by both the page and the wheel."""
     by_body = {p["body"]: p for p in placements}
@@ -87,11 +150,13 @@ def wheel_data(placements):
     asc_longitude = to_longitude(asc["sign"], asc["degree"], asc["minute"])
 
     rows = []
+    raw_points = []
     for body in BODIES:
         p = by_body.get(body["name"])
         if p is None:
             continue
         longitude = to_longitude(p["sign"], p["degree"], p["minute"])
+        raw_points.append((body["name"], longitude))
         rows.append(
             {
                 "body": body["name"],
@@ -106,7 +171,11 @@ def wheel_data(placements):
                 "retrograde": bool(p["retrograde"]),
             }
         )
-    return {"ascSignIndex": int(asc_longitude // 30), "placements": rows}
+    return {
+        "ascSignIndex": int(asc_longitude // 30),
+        "placements": rows,
+        "aspects": find_aspects(raw_points),
+    }
 
 
 def parse_placements(form):

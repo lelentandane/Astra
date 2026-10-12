@@ -4,46 +4,120 @@
 {% block content %}
 <section class="chart-layout">
   <div class="chart-wheel">
-    <div id="wheel" role="img" aria-label="Wheel for {{ chart.name }}. Placements are listed in the table."></div>
+    <div id="wheel" role="img" aria-label="Wheel for {{ chart.name }}. Placements and aspects are listed in the tabs."></div>
+    <p class="wheel-key" aria-hidden="true">
+      <span class="key key-harmonious">Harmonious</span>
+      <span class="key key-challenging">Challenging</span>
+      <span class="key key-neutral">Conjunction</span>
+    </p>
   </div>
 
   <div class="chart-details">
     <h1>{{ chart.name }}</h1>
     {% if chart.birth_date or chart.birth_time or chart.birth_place %}
-      <p class="birth-line">
-        {{ [chart.birth_date, chart.birth_time, chart.birth_place] | select | join(', ') }}
-      </p>
+      <p class="birth-line">{{ [chart.birth_date, chart.birth_time, chart.birth_place] | select | join(', ') }}</p>
     {% endif %}
 
-    <table class="placements">
-      <caption class="visually-hidden">Placements for {{ chart.name }}</caption>
-      <thead>
-        <tr><th scope="col">Body</th><th scope="col">Sign</th><th scope="col">Position</th><th scope="col">House</th></tr>
-      </thead>
-      <tbody>
-        {% for p in wheel.placements %}
-          <tr data-row="{{ p.body }}">
-            <th scope="row">
-              <span class="sym" aria-hidden="true">{{ p.glyph }}</span>
-              {{ p.body }}{% if p.retrograde %} <abbr title="Retrograde" class="rx">&#8478;</abbr>{% endif %}
-            </th>
-            <td><span class="sym" aria-hidden="true">{{ p.signGlyph }}</span> {{ p.sign }}</td>
-            <td class="num">{{ p.position }}</td>
-            <td>{{ p.house | ordinal }}</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <div class="topic-filter" role="group" aria-label="Focus on a topic">
+      <span class="topic-label">Focus on</span>
+      <button type="button" class="chip is-on" data-topic="" aria-pressed="true">Everything</button>
+      {% for topic in topics %}
+        <button type="button" class="chip" data-topic="{{ topic }}" aria-pressed="false">{{ topic }}</button>
+      {% endfor %}
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="Chart details">
+      <button type="button" role="tab" id="tab-placements" aria-controls="panel-placements" aria-selected="true">Placements</button>
+      <button type="button" role="tab" id="tab-aspects" aria-controls="panel-aspects" aria-selected="false" tabindex="-1">Aspects <span class="count">{{ wheel.aspects | length }}</span></button>
+      <button type="button" role="tab" id="tab-reading" aria-controls="panel-reading" aria-selected="false" tabindex="-1">Reading</button>
+    </div>
+
+    <div id="panel-placements" role="tabpanel" aria-labelledby="tab-placements">
+      <table class="placements">
+        <caption class="visually-hidden">Placements for {{ chart.name }}</caption>
+        <thead>
+          <tr><th scope="col">Body</th><th scope="col">Sign</th><th scope="col">Position</th><th scope="col">House</th></tr>
+        </thead>
+        <tbody>
+          {% for p in wheel.placements %}
+            <tr data-row="{{ p.body }}">
+              <th scope="row">
+                <button type="button" class="row-link" data-select="{{ p.body }}">
+                  <span class="sym" aria-hidden="true">{{ p.glyph }}</span>
+                  {{ p.body }}{% if p.retrograde %} <abbr title="Retrograde" class="rx">&#8478;</abbr>{% endif %}
+                </button>
+              </th>
+              <td><span class="sym" aria-hidden="true">{{ p.signGlyph }}</span> {{ p.sign }}</td>
+              <td class="num">{{ p.position }}</td>
+              <td>{{ p.house | ordinal }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <p class="hint">Select a body to read about it.</p>
+    </div>
+
+    <div id="panel-aspects" role="tabpanel" aria-labelledby="tab-aspects" hidden>
+      {% if wheel.aspects %}
+        <table class="placements aspects">
+          <caption class="visually-hidden">Aspects in {{ chart.name }}</caption>
+          <thead>
+            <tr><th scope="col">Aspect</th><th scope="col">Type</th><th scope="col">Orb</th></tr>
+          </thead>
+          <tbody>
+            {% for a in wheel.aspects %}
+              <tr data-aspect-a="{{ a.a }}" data-aspect-b="{{ a.b }}">
+                <th scope="row">{{ a.a }} and {{ a.b }}</th>
+                <td><span class="nature nature-{{ a.nature }}">{{ a.type }}</span></td>
+                <td class="num">{{ a.orbText }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <p class="hint">Orbs are the allowed distance from an exact aspect: 8 degrees for conjunctions and oppositions, 6 for squares and trines, 4 for sextiles, and no more than 3 when the Ascendant or North Node is involved. Tightest aspects are listed first.</p>
+      {% else %}
+        <p>No aspects fall within orb in this chart.</p>
+      {% endif %}
+    </div>
+
+    <div id="panel-reading" role="tabpanel" aria-labelledby="tab-reading" hidden>
+      <p id="reading-empty">Choose a planet on the wheel or a body in the Placements tab and its reading appears here.</p>
+
+      <div id="reading-content" hidden>
+        <h2 id="reading-title" tabindex="-1"></h2>
+        <dl id="reading-parts" class="reading-parts"></dl>
+
+        <h3 id="reading-aspects-heading">Aspects</h3>
+        <ul id="reading-aspects" class="reading-aspects"></ul>
+
+        <h3>Your notes</h3>
+        <ul id="reading-notes" class="note-list"></ul>
+
+        <form class="note-form" method="post" action="{{ url_for('main.add_note', chart_id=chart.id) }}">
+          <input type="hidden" name="body" id="note-body" value="">
+          <input type="hidden" name="return_to" value="chart">
+          <label for="note-content">Add an observation</label>
+          <textarea id="note-content" name="content" rows="3" maxlength="2000" placeholder="What did you notice? What happened around this placement?"></textarea>
+          <div class="note-form-row">
+            <label for="note-date" class="visually-hidden">Date</label>
+            <input id="note-date" name="entry_date" type="date">
+            <button class="button" type="submit">Save note</button>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <div class="actions">
+      <a class="button button-quiet" href="{{ url_for('main.journal_page', chart_id=chart.id) }}">Open journal</a>
       <a class="button button-quiet" href="{{ url_for('main.index') }}">Back to charts</a>
-      <form method="post" action="{{ url_for('main.delete_chart', chart_id=chart.id) }}" onsubmit="return confirm('Delete this chart? This cannot be undone.');">
+      <form method="post" action="{{ url_for('main.delete_chart', chart_id=chart.id) }}" onsubmit="return confirm('Delete this chart and its notes? This cannot be undone.');">
         <button class="button button-danger" type="submit">Delete chart</button>
       </form>
     </div>
   </div>
 </section>
 <script id="chart-data" type="application/json">{{ wheel|tojson }}</script>
+<script id="reading-data" type="application/json">{{ reading_data|tojson }}</script>
 {% endblock %}
 
 {% block scripts %}

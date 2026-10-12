@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Edit note | Astra{% endblock %}
+
+{% block content %}
+<section class="page-head"><h1>Edit note</h1></section>
+
+{% if errors %}
+  <div class="alert" role="alert">
+    <ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul>
+  </div>
+{% endif %}
+
+<form class="note-form note-form-wide" method="post">
+  <div class="field">
+    <label for="body">About</label>
+    <select id="body" name="body">
+      <option value="">Whole chart</option>
+      {% for b in bodies %}
+        <option value="{{ b.name }}" {% if note.body == b.name %}selected{% endif %}>{{ b.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="field">
+    <label for="content">Observation</label>
+    <textarea id="content" name="content" rows="6" maxlength="2000" required>{{ note.content }}</textarea>
+  </div>
+  <div class="field">
+    <label for="entry_date">Date</label>
+    <input id="entry_date" name="entry_date" type="date" value="{{ note.entry_date }}">
+  </div>
+  <div class="actions">
+    <button class="button" type="submit">Save changes</button>
+    <a class="button button-quiet" href="{{ url_for('main.journal_page', chart_id=note.chart_id) }}">Cancel</a>
+  </div>
+</form>
+{% endblock %}

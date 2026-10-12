@@ -24,6 +24,10 @@ def init_db():
     with current_app.open_resource("schema.sql") as f:
         connection.executescript(f.read().decode("utf8"))
 
+    from . import repository
+
+    repository.seed_interpretations(connection)
+
 
 def init_app(app):
     app.teardown_appcontext(close_db)

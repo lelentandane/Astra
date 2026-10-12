@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Journal | {{ chart.name }} | Astra{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="crumb"><a href="{{ url_for('main.view_chart', chart_id=chart.id) }}">{{ chart.name }}</a></p>
+    <h1>Journal</h1>
+  </div>
+</section>
+
+<section class="journal-layout">
+  <form class="note-form note-form-wide" method="post" action="{{ url_for('main.add_note', chart_id=chart.id) }}">
+    <input type="hidden" name="return_to" value="journal">
+    <h2>New note</h2>
+    <div class="field">
+      <label for="new-body">About</label>
+      <select id="new-body" name="body">
+        <option value="">Whole chart</option>
+        {% for b in bodies %}<option value="{{ b.name }}">{{ b.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="new-content">Observation</label>
+      <textarea id="new-content" name="content" rows="5" maxlength="2000" required></textarea>
+    </div>
+    <div class="field">
+      <label for="new-date">Date <span class="optional">defaults to today</span></label>
+      <input id="new-date" name="entry_date" type="date">
+    </div>
+    <button class="button" type="submit">Save note</button>
+  </form>
+
+  <div class="journal-entries">
+    <form class="journal-filter" method="get">
+      <div class="field">
+        <label for="filter-body">Show</label>
+        <select id="filter-body" name="body">
+          <option value="all" {% if selected_body == 'all' %}selected{% endif %}>All notes</option>
+          <option value="chart" {% if selected_body == 'chart' %}selected{% endif %}>Whole chart only</option>
+          {% for b in bodies %}
+            <option value="{{ b.name }}" {% if selected_body == b.name %}selected{% endif %}>{{ b.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="filter-q">Search</label>
+        <input id="filter-q" name="q" type="search" value="{{ query }}" placeholder="Words in a note">
+      </div>
+      <button class="button button-quiet" type="submit">Filter</button>
+    </form>
+
+    <p class="hint">{{ notes | length }} of {{ total }} note{{ '' if total == 1 else 's' }} shown.</p>
+
+    {% if notes %}
+      <ul class="note-list note-list-full">
+        {% for note in notes %}
+          <li class="note">
+            <div class="note-meta">
+              <span class="note-date">{{ note.entry_date }}</span>
+              <span class="note-tag">{{ note.body or 'Whole chart' }}</span>
+            </div>
+            <p class="note-text">{{ note.content }}</p>
+            <div class="note-actions">
+              <a href="{{ url_for('main.edit_note', note_id=note.id) }}">Edit</a>
+              <form method="post" action="{{ url_for('main.delete_note', note_id=note.id) }}" onsubmit="return confirm('Delete this note?');">
+                <button type="submit" class="link-button">Delete</button>
+              </form>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty-note">{% if total %}No notes match this filter.{% else %}Nothing here yet. Write your first observation on the left.{% endif %}</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

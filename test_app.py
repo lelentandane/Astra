@@ -39,3 +39,11 @@ def test_missing_chart_is_a_404(client):
     response = client.get("/charts/999")
     assert response.status_code == 404
     assert b"does not exist" in response.data
+
+
+def test_chart_page_contains_reading_and_aspect_data(client):
+    client.post("/charts/sample")
+    page = client.get("/charts/1").data
+    assert b"reading-data" in page
+    assert b"Sun in Leo, 10th house" in page
+    assert b"Opposition" in page

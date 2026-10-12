@@ -1,19 +1,12 @@
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
-from . import astro, repository
+from . import astro, interpret, journal, repository
 from .db import get_db
 
 bp = Blueprint("main", __name__)
 
 
-def ordinal(n):
-    """1 -> 1st, 2 -> 2nd, 11 -> 11th. Used for house numbers in templates."""
-    if 10 <= n % 100 <= 20:
-        suffix = "th"
-    else:
-        suffix = {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
-    return f"{n}{suffix}"
-
+# ------------------------------------------------------------------ charts
 
 @bp.get("/")
 def index():
@@ -59,8 +52,23 @@ def view_chart(chart_id):
     chart = repository.get_chart(db, chart_id)
     if chart is None:
         abort(404)
+
     wheel = astro.wheel_data(repository.get_placements(db, chart_id))
-    return render_template("chart.html", chart=chart, wheel=wheel)
+    readings = interpret.build_readings(wheel, repository.get_interpretations(db))
+
+    notes_by_body = {}
+    for note in repository.list_notes(db, chart_id):
+        notes_by_body.setdefault(note["body"] or "", []).append(
+            {"id": note["id"], "content": note["content"], "entryDate": note["entry_date"]}
+        )
+
+    return render_template(
+        "chart.html",
+        chart=chart,
+        wheel=wheel,
+        topics=interpret.topics_in_use(readings),
+        reading_data={"readings": readings, "notes": notes_by_body},
+    )
 
 
 @bp.post("/charts/<int:chart_id>/delete")
@@ -83,6 +91,87 @@ def load_sample():
         db, "Sample chart (fictional)", {}, astro.SAMPLE_PLACEMENTS, is_sample=True
     )
     return redirect(url_for("main.view_chart", chart_id=chart_id))
+
+
+# ------------------------------------------------------------------ journal
+
+def _redirect_after_note(chart_id, body):
+    """Only ever redirect to our own pages, chosen from a fixed set."""
+    if request.form.get("return_to") == "chart":
+        if body:
+            return redirect(url_for("main.view_chart", chart_id=chart_id, body=body) + "#reading")
+        return redirect(url_for("main.view_chart", chart_id=chart_id))
+    return redirect(url_for("main.journal_page", chart_id=chart_id))
+
+
+@bp.get("/charts/<int:chart_id>/journal")
+def journal_page(chart_id):
+    db = get_db()
+    chart = repository.get_chart(db, chart_id)
+    if chart is None:
+        abort(404)
+
+    # "all" shows everything, "chart" only whole-chart notes, otherwise one placement.
+    selected = request.args.get("body", "all")
+    body = None if selected == "all" else "" if selected == "chart" else selected
+    query = request.args.get("q", "").strip()
+    notes = repository.list_notes(db, chart_id, body=body, query=query or None)
+    return render_template(
+        "journal.html",
+        chart=chart,
+        notes=notes,
+        bodies=astro.BODIES,
+        selected_body=selected,
+        query=query,
+        total=len(repository.list_notes(db, chart_id)),
+    )
+
+
+@bp.post("/charts/<int:chart_id>/notes")
+def add_note(chart_id):
+    db = get_db()
+    if repository.get_chart(db, chart_id) is None:
+        abort(404)
+
+    data, errors = journal.parse_note(request.form)
+    if errors:
+        for error in errors:
+            flash(error)
+        return _redirect_after_note(chart_id, data["body"])
+
+    repository.add_note(db, chart_id, data)
+    flash("Note saved.")
+    return _redirect_after_note(chart_id, data["body"])
+
+
+@bp.route("/notes/<int:note_id>/edit", methods=("GET", "POST"))
+def edit_note(note_id):
+    db = get_db()
+    note = repository.get_note(db, note_id)
+    if note is None:
+        abort(404)
+
+    if request.method == "POST":
+        data, errors = journal.parse_note(request.form)
+        if not errors:
+            repository.update_note(db, note_id, data)
+            flash("Note updated.")
+            return redirect(url_for("main.journal_page", chart_id=note["chart_id"]))
+        note = {"id": note_id, "chart_id": note["chart_id"], **data}
+        return render_template("edit_note.html", note=note, bodies=astro.BODIES, errors=errors), 400
+
+    return render_template("edit_note.html", note=note, bodies=astro.BODIES, errors=[])
+
+
+@bp.post("/notes/<int:note_id>/delete")
+def delete_note(note_id):
+    db = get_db()
+    note = repository.get_note(db, note_id)
+    if note is None:
+        abort(404)
+    repository.delete_note(db, note_id)
+    flash("Note deleted.")
+    return redirect(url_for("main.journal_page", chart_id=note["chart_id"]))
 
 
 @bp.app_errorhandler(404)
