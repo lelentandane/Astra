@@ -28,15 +28,14 @@ Everything runs on your own computer with Flask and SQLite. There are no account
 - 50+ automated tests for the astrology maths, the interpretation engine, the journal and every route, run on each push by GitHub Actions.
 - Keyboard accessible (tabs, wheel, table), responsive down to phone width, respects reduced-motion settings, and fonts are bundled so it works offline.
 
-| 
 
 ![Aspects tab](aspects.png)
 
- | 
+ 
 
 ![Journal](journal.png)
 
- |
+ 
 
 ## Run it
 
