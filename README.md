@@ -1,10 +1,25 @@
 # Astra
 
+![Tests](https://github.com/lelentandane/astra/actions/workflows/tests.yml/badge.svg)
+
 Astra is a local web app for exploring astrology birth charts. Enter the placements from a chart you already have and Astra draws an interactive wheel, works out the houses and aspects, builds a written reading for every placement, and lets you keep a journal of observations attached to specific planets.
 
 Everything runs on your own computer with Flask and SQLite. There are no accounts, no external services and no API keys.
 
-![Chart wheel with a reading open](reading.png)
+![Chart wheel with a reading open](docs/screenshots/reading.png)
+
+## The problem
+
+Most astrology sites show a chart as a flat picture and keep your own thoughts somewhere else. Astra puts the interactive wheel, a plain-language reading for each placement, and your own dated notes in one place. It runs on your own computer, so there is no account and nothing is sent anywhere.
+
+**Built for:** people studying their own chart who want to explore it and keep track of what they notice over time.
+
+## What this project demonstrates
+
+- **Full-stack web development:** a Flask app factory, Jinja templates, SQLite with cascading deletes, and parameterised SQL kept in one repository module.
+- **Algorithms and geometry:** longitude, whole-sign houses and aspect orbs calculated from scratch, and an SVG chart wheel drawn in JavaScript with a spacing pass so crowded planets stay readable.
+- **Clean separation:** reading wording lives in a content file and the database, so it can be edited without touching logic.
+- **Quality:** 50+ automated tests, continuous integration, server-side validation, keyboard access and offline fonts.
 
 ## Features
 
@@ -28,14 +43,9 @@ Everything runs on your own computer with Flask and SQLite. There are no account
 - 50+ automated tests for the astrology maths, the interpretation engine, the journal and every route, run on each push by GitHub Actions.
 - Keyboard accessible (tabs, wheel, table), responsive down to phone width, respects reduced-motion settings, and fonts are bundled so it works offline.
 
-
-![Aspects tab](aspects.png)
-
- 
-
-![Journal](journal.png)
-
- 
+| Aspects | Journal |
+|---|---|
+| ![Aspects tab](docs/screenshots/aspects.png) | ![Journal](docs/screenshots/journal.png) |
 
 ## Run it
 
@@ -105,6 +115,11 @@ run.py               Start the app
 ## Notes
 
 The sample chart is fictional. Interpretation text is a starting point written for this project and is meant to be edited in `astra/content.py`.
+
+## Author
+
+**Sphelele Ntandane**
+[GitHub](https://github.com/Lelentandane) | [LinkedIn](https://www.linkedin.com/in/sphelele-ntandane-9a7178382)
 
 ## Licence
 
